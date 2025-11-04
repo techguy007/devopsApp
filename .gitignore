@@ -1,1 +1,22 @@
-./target/*
+# Terraform: Ignore these patterns in ALL sub-directories
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.backup
+**/.terraform.lock.hcl
+**/*.tfvars
+**/crash.log
+
+# Java / Maven: Ignore these patterns in ALL sub-directories
+**/target/
+**/*.jar
+**/*.war
+**/*.ear
+
+# IDE & OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+

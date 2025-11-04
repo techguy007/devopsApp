@@ -7,6 +7,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+// We need to import the new jakarta.servlet
+import jakarta.servlet.ServletException;
+
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
@@ -27,7 +31,5 @@ class RepositoryDetailsControllerTest extends AbstractTest {
 		int status = mvcResult.getResponse().getStatus();
 		assertEquals(200, status);
 	}
-
-
 
 }

@@ -10,7 +10,7 @@ class DemoWorkshopApplicationTests {
 
 	@Test
 	void contextLoads() {
-		List li = new ArrayList<String> ();
+		List<String> li = new ArrayList<String> (); // Good practice to type your list
 	}
 
 }
