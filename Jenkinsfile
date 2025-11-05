@@ -1,10 +1,9 @@
 def registry = 'https://devopsapp.jfrog.io'
 def imageName = 'devopsapp.jfrog.io/devopsapp-docker-local/devopsapp'
 def version   = '2.1.2'
+
 pipeline {
-    agent {
-        label 'build-slave'
-    }
+    agent { label 'build-slave' }
 
     environment {
         SONAR_TOKEN_SECRET = credentials('SONAR_TOKEN')
@@ -38,7 +37,7 @@ pipeline {
 
         stage('4. SonarCloud Analysis') {
             steps {
-                echo "Starting SonarCloud analysis (uploading report)..."
+                echo "Starting SonarCloud analysis..."
                 withSonarQubeEnv('SonarCloud') {
                     sh """
                         mvn sonar:sonar \
@@ -55,7 +54,7 @@ pipeline {
             steps {
                 script {
                     echo "Polling SonarCloud API for Quality Gate status..."
-                    def maxRetries = 20       // ~10 minutes total (30s * 20)
+                    def maxRetries = 20
                     def delaySeconds = 30
                     def status = "PENDING"
 
@@ -93,14 +92,11 @@ pipeline {
             steps {
                 script {
                     echo '<--------------- Jar Publish Started --------------->'
-
                     def server = Artifactory.newServer(
                         url: registry + '/artifactory',
                         credentialsId: 'artifactory_token'
                     )
-
-                    def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}"
-
+                    def properties = "buildid=${env.BUILD_ID},commitid=${env.GIT_COMMIT ?: 'unknown'}"
                     def uploadSpec = """{
                         "files": [
                             {
@@ -111,38 +107,37 @@ pipeline {
                             }
                         ]
                     }"""
-
                     def buildInfo = server.upload(uploadSpec)
                     buildInfo.env.collect()
                     server.publishBuildInfo(buildInfo)
-
                     echo '<--------------- Jar Publish Ended --------------->'
                 }
             }
         }
-    }
-    
-stage("7. Docker Build") {
-    steps {
-        script {
-            echo '<--------------- Docker Build Started --------------->'
-            app = docker.build("${imageName}:${version}")
-            echo '<--------------- Docker Build Ended --------------->'
-        }
-    }
-}
 
-stage("8. Docker Publish") {
-    steps {
-        script {
-            echo '<--------------- Docker Publish Started --------------->'
-            docker.withRegistry(registry, 'artifactory_token') {
-                app.push()
+        stage('7. Docker Build') {
+            steps {
+                script {
+                    echo '<--------------- Docker Build Started --------------->'
+                    app = docker.build("${imageName}:${version}")
+                    echo '<--------------- Docker Build Ended --------------->'
+                }
             }
-            echo '<--------------- Docker Publish Ended --------------->'
+        }
+
+        stage('8. Docker Publish') {
+            steps {
+                script {
+                    echo '<--------------- Docker Publish Started --------------->'
+                    docker.withRegistry(registry, 'artifactory_token') {
+                        app.push()
+                    }
+                    echo '<--------------- Docker Publish Ended --------------->'
+                }
+            }
         }
     }
-}
+
     post {
         always {
             echo "Pipeline finished. Cleaning up workspace..."
