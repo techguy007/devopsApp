@@ -1,5 +1,6 @@
 def registry = 'https://devopsapp.jfrog.io'
-
+def imageName = 'devopsapp.jfrog.io/devopsapp-docker-local/devopsapp'
+def version   = '2.1.2'
 pipeline {
     agent {
         label 'build-slave'
@@ -120,7 +121,28 @@ pipeline {
             }
         }
     }
+    
+stage("7. Docker Build") {
+    steps {
+        script {
+            echo '<--------------- Docker Build Started --------------->'
+            app = docker.build("${imageName}:${version}")
+            echo '<--------------- Docker Build Ended --------------->'
+        }
+    }
+}
 
+stage("8. Docker Publish") {
+    steps {
+        script {
+            echo '<--------------- Docker Publish Started --------------->'
+            docker.withRegistry(registry, 'artifactory_token') {
+                app.push()
+            }
+            echo '<--------------- Docker Publish Ended --------------->'
+        }
+    }
+}
     post {
         always {
             echo "Pipeline finished. Cleaning up workspace..."
