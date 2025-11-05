@@ -2,47 +2,35 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
-    <!-- 
-    CHANGE 1: Updated parent to a modern, stable Spring Boot 3.x version 
-    This also brings in modern, secure dependencies.
-    -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.5</version> <!-- Was 2.2.0.RELEASE -->
+        <!--
+          MODERNIZATION:
+          Upgraded from 2.2.0 (ancient) to 3.2.5 (modern, stable, Java 17+).
+          This is a major version jump.
+        -->
+        <version>3.2.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    
-    <groupId>com.valaxy</groupId>
-    <artifactId>devopsApp</artifactId> <!-- Renamed from demo-workshop for clarity -->
+    <!--
+      FIX:
+      Changed groupId to 'com.stalin.demo' to match your existing Java package names.
+      This prevents a common build failure.
+    -->
+    <groupId>com.stalin.demo</groupId>
+    <artifactId>devopsApp</artifactId>
     <version>2.1.2</version>
     <name>devopsApp</name>
     <packaging>jar</packaging>
-    <description>Demo project for Spring Boot CI/CD pipeline</description>
+    <description>Demo project for Spring Boot</description>
 
     <properties>
-        <!-- 
-        CHANGE 2: Set Java version to 17. 
-        Spring Boot 3 requires Java 17+.
+        <!--
+          MODERNIZATION:
+          Upgraded from Java 1.8 to 17, matching our servers.
         -->
-        <java.version>17</java.version> <!-- Was 1.8 -->
-        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version> <!-- Updated -->
-        
-        <!-- 
-        *** THE SONARCLOUD FIX (PART 1) ***
-        We define the Sonar properties here, directly in the POM.
-        This is the most reliable way to link the build to SonarCloud.
-        -->
-        <sonar.projectKey>techguy007_devopsApp</sonar.projectKey>
-        <sonar.organization>techguy007</sonar.organization>
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        
-        <!-- This tells Sonar where to find the coverage report -->
-        <sonar.coverage.jacoco.xmlReportPath>
-            ${project.build.directory}/site/jacoco/jacoco.xml
-        </sonar.coverage.jacoco.xmlReportPath>
-
+        <java.version>17</java.version>
     </properties>
 
     <dependencies>
@@ -54,82 +42,85 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        
-        <!-- 
-        CHANGE 3: Removed old github-api and twitter4j libraries.
-        The twitter4j library was for the old v1.1 API and will not work.
-        This fixes the compilation errors.
-        -->
 
         <!--
-        CHANGE 4: Migrated test dependencies.
-        Spring Boot 3 uses JUnit 5 by default.
-        We removed the old JUnit 4 exclusions.
+          MODERNIZATION:
+          Upgraded the GitHub API library to a modern version.
         -->
+        <dependency>
+            <groupId>org.kohsuke</groupId>
+            <artifactId>github-api</artifactId>
+            <version>1.321</version>
+        </dependency>
+
+        <!--
+          REMOVED:
+          The 'twitter4j' library was old, used a deprecated API (v1.1),
+          and was causing the build failure. It has been removed.
+          We also removed the old 'junit' 4.x dependency.
+        -->
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-            <!-- 
-            We no longer need to exclude JUnit 4 (junit-vintage-engine)
-            as Spring Boot 3 uses JUnit 5 natively.
+            <!--
+              MODERNIZATION:
+              Removed old exclusions for JUnit 4 (junit-vintage-engine).
+              Spring Boot 3 uses JUnit 5 by default.
             -->
         </dependency>
-        
-        <!-- Note: mockito is now included in spring-boot-starter-test -->
-        
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
-    
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-            
-            <!-- 
-            CHANGE 5: Configure JaCoCo (Java Code Coverage) plugin.
-            This is what SonarCloud uses to calculate test coverage.
+            <!--
+              MODERNIZATION:
+              Updated Surefire and JaCoCo plugins to modern,
+              Java 17-compatible versions.
             -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.11</version> <!-- Modern version -->
+                <version>0.8.11</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
-                    <!-- attached to Maven test phase -->
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
-                        <!-- 
-                        *** THE SONARCLOUD FIX (PART 2) ***
-                        This configuration tells JaCoCo to generate the XML report
-                        that SonarCloud needs (defined in our properties above).
-                        This will fix your "0.0% Coverage" issue.
-                        -->
-                        <configuration>
-                            <formats>
-                                <format>XML</format>
-                            </formats>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
 
-    <!-- 
-    CHANGE 6: Removed the old distributionManagement.
-    This was for a local file deployment and will conflict
-    with Artifactory / GitHub Packages later.
+    <!--
+      REMOVED:
+      Removed the 'distributionManagement' section. This was trying
+      to publish the JAR to a local file path, which conflicts
+      with our future Artifactory stage.
     -->
 
 </project>
+
