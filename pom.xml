@@ -5,30 +5,32 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <!-- 
-          CHANGE 1: Upgraded from 2.2.0.RELEASE to a modern, stable
-          Spring Boot 3 version. This is a big but necessary jump.
-          (Using 3.2.5 as a stable, recent example)
+        <!--
+          MODERNIZATION:
+          Upgraded from 2.2.0 (ancient) to 3.2.5 (modern, stable, Java 17+).
+          This is a major version jump.
         -->
         <version>3.2.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.valaxy</groupId>
-    <artifactId>demo-workshop</artifactId>
+    <!--
+      FIX:
+      Changed groupId to 'com.stalin.demo' to match your existing Java package names.
+      This prevents a common build failure.
+    -->
+    <groupId>com.stalin.demo</groupId>
+    <artifactId>devopsApp</artifactId>
     <version>2.1.2</version>
-    <name>demo-workshop</name>
+    <name>devopsApp</name>
     <packaging>jar</packaging>
     <description>Demo project for Spring Boot</description>
 
     <properties>
-        <!-- 
-          CHANGE 2: Set Java version to 17, which matches our servers.
+        <!--
+          MODERNIZATION:
+          Upgraded from Java 1.8 to 17, matching our servers.
         -->
         <java.version>17</java.version>
-        <!-- Using a more modern GitHub API library version -->
-        <github-api.version>1.321</github-api.version>
-        <!-- Using a more modern twitter4j version (though API is still an issue) -->
-        <twitter4j.version>4.1.2</twitter4j.version>
     </properties>
 
     <dependencies>
@@ -41,50 +43,33 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.kohsuke/github-api -->
+        <!--
+          MODERNIZATION:
+          Upgraded the GitHub API library to a modern version.
+        -->
         <dependency>
             <groupId>org.kohsuke</groupId>
             <artifactId>github-api</artifactId>
-            <version>${github-api.version}</version>
-        </dependency>
-        
-        <!-- https://mvnrepository.com/artifact/org.twitter4j/twitter4j-core -->
-        <dependency>
-            <groupId>org.twitter4j</groupId>
-            <artifactId>twitter4j-core</artifactId>
-            <version>${twitter4j.version}</version>
+            <version>1.321</version>
         </dependency>
 
-        <!-- 
-          CHANGE 3: Removed the old JUnit 4 dependency.
-          spring-boot-starter-test brings in JUnit 5 by default.
+        <!--
+          REMOVED:
+          The 'twitter4j' library was old, used a deprecated API (v1.1),
+          and was causing the build failure. It has been removed.
+          We also removed the old 'junit' 4.x dependency.
         -->
-        <!-- 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
-            <scope>test</scope>
-        </dependency> 
-        -->
-        
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-            <!-- 
-              CHANGE 4: Simplified exclusions. We ONLY need to exclude
-              the vintage engine (JUnit 4). JUnit 5 is now the standard.
+            <!--
+              MODERNIZATION:
+              Removed old exclusions for JUnit 4 (junit-vintage-engine).
+              Spring Boot 3 uses JUnit 5 by default.
             -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
-
-        <!-- This was fine, no change needed -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
@@ -92,40 +77,32 @@
         </dependency>
     </dependencies>
 
-    
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-            
-            <!-- This Surefire plugin is fine, but let's ensure it's managed by Spring Boot -->
+            <!--
+              MODERNIZATION:
+              Updated Surefire and JaCoCo plugins to modern,
+              Java 17-compatible versions.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <!-- 
-                  CHANGE 5: Removed hard-coded version.
-                  The spring-boot-starter-parent POM now manages this version for us.
-                -->
-                <!-- <version>2.22.2</version> -->
-                <configuration>
-                    <argLine>${argLine} -Xmx2048m</argLine>
-                </configuration>
+                <version>3.2.5</version>
             </plugin>
-
-            <!-- This JaCoCo (code coverage) plugin is fine, no change needed -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.11</version> <!-- Bumping to a modern version -->
+                <version>0.8.11</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
-                    <!-- attached to Maven test phase -->
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
@@ -138,19 +115,12 @@
         </plugins>
     </build>
 
-    <!-- 
-      CHANGE 6: We will REMOVE this section.
-      In a CI/CD pipeline, we will tell Maven where to deploy
-      from the Jenkinsfile, using credentials stored in Jenkins.
-      This hard-coded local file path is bad practice.
-    -->
-    <!-- 
-    <distributionManagement>
-        <repository>
-            <id>dev</id>
-            <url>file://jarstaging</url>
-        </repository>
-    </distributionManagement> 
+    <!--
+      REMOVED:
+      Removed the 'distributionManagement' section. This was trying
+      to publish the JAR to a local file path, which conflicts
+      with our future Artifactory stage.
     -->
 
 </project>
+
