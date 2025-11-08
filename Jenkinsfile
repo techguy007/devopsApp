@@ -130,22 +130,29 @@ pipeline {
             }
         }
 
-        stage('9. Deploy to EKS (Helm)') {
-            steps {
-                script {
-                    echo "Deploying app to EKS via Helm..."
-                    sh """
-                        aws eks update-kubeconfig --region us-east-1 --name devops-eks
-                        helm upgrade --install devopsapp ./helm-chart \
-                          --namespace devops \
-                          --create-namespace \
-                          --set image.repository=${imageName} \
-                          --set image.tag=${env.IMAGE_TAG} \
-                          --set service.type=LoadBalancer
-                    """
-                }
-            }
+       stage('9. Deploy to EKS (Helm)') {
+        steps {
+        script {
+            echo "Deploying app to EKS via Helm..."
+            // Update kubeconfig
+            sh "aws eks update-kubeconfig --region us-east-1 --name devops-eks"
+
+            // Deploy using Helm
+            sh """
+                helm upgrade --install devopsapp ~/devopsapp \
+                  --namespace devops \
+                  --create-namespace \
+                  --kube-context arn:aws:eks:us-east-1:040344563327:cluster/devops-eks \
+                  --set image.repository=devopsapp.jfrog.io/devopsapp-docker-local/devopsapp \
+                  --set image.tag=build-${env.BUILD_NUMBER} \
+                  --set service.type=NodePort
+            """
+
+            echo "✅ Helm deployment triggered successfully"
         }
+    }
+}
+
     }
 
     post {
