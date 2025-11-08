@@ -1,6 +1,5 @@
 def registry = 'https://devopsapp.jfrog.io'
 def imageName = 'devopsapp.jfrog.io/devopsapp-docker-local/devopsapp'
-def version   = '2.1.2'
 
 pipeline {
     agent { label 'build-slave' }
@@ -9,12 +8,14 @@ pipeline {
         SONAR_TOKEN_SECRET = credentials('SONAR_TOKEN')
         SONAR_PROJECT_KEY  = 'techguy007'
         SONAR_ORG          = 'techguy007'
+        HELM_KUBECONTEXT   = 'eks-devops'
     }
 
     stages {
+
         stage('1. Checkout') {
             steps {
-                echo "Checking out code from GitHub..."
+                echo "Checking out code..."
                 git branch: 'main', url: 'https://github.com/techguy007/devopsApp.git'
             }
         }
@@ -53,7 +54,7 @@ pipeline {
         stage('5. Poll SonarCloud Quality Gate') {
             steps {
                 script {
-                    echo "Polling SonarCloud API for Quality Gate status..."
+                    echo "Polling SonarCloud API for Quality Gate..."
                     def maxRetries = 20
                     def delaySeconds = 30
                     def status = "PENDING"
@@ -65,25 +66,15 @@ pipeline {
                             returnStdout: true
                         ).trim()
 
-                        if (response.contains('"status":"OK"')) {
-                            echo "✅ SonarCloud Quality Gate PASSED!"
-                            status = "OK"
-                            break
-                        } else if (response.contains('"status":"ERROR"')) {
-                            echo "❌ SonarCloud Quality Gate FAILED!"
-                            status = "ERROR"
-                            break
-                        } else {
-                            echo "SonarCloud still analyzing... (attempt ${i}/${maxRetries})"
-                            sleep time: delaySeconds, unit: 'SECONDS'
-                        }
+                        if (response.contains('"status":"OK"')) { status = "OK"; break }
+                        if (response.contains('"status":"ERROR"')) { status = "ERROR"; break }
+
+                        echo "Waiting... (attempt ${i}/${maxRetries})"
+                        sleep time: delaySeconds, unit: 'SECONDS'
                     }
 
-                    if (status == "PENDING") {
-                        error "Timed out waiting for SonarCloud analysis to complete."
-                    } else if (status == "ERROR") {
-                        error "SonarCloud Quality Gate failed. Check dashboard for details."
-                    }
+                    if (status == "PENDING") { error "Timed out waiting for Quality Gate." }
+                    if (status == "ERROR") { error "Quality Gate failed. Check SonarCloud dashboard." }
                 }
             }
         }
@@ -119,7 +110,9 @@ pipeline {
             steps {
                 script {
                     echo '<--------------- Docker Build Started --------------->'
-                    app = docker.build("${imageName}:${version}")
+                    def version = "build-${env.BUILD_NUMBER}"
+                    env.IMAGE_TAG = version
+                    def app = docker.build("${imageName}:${version}")
                     echo '<--------------- Docker Build Ended --------------->'
                 }
             }
@@ -133,6 +126,23 @@ pipeline {
                         app.push()
                     }
                     echo '<--------------- Docker Publish Ended --------------->'
+                }
+            }
+        }
+
+        stage('9. Deploy to EKS (Helm)') {
+            steps {
+                script {
+                    echo "Deploying app to EKS via Helm..."
+                    sh """
+                        aws eks update-kubeconfig --region us-east-1 --name devops-eks
+                        helm upgrade --install devopsapp ./helm-chart \
+                          --namespace devops \
+                          --create-namespace \
+                          --set image.repository=${imageName} \
+                          --set image.tag=${env.IMAGE_TAG} \
+                          --set service.type=LoadBalancer
+                    """
                 }
             }
         }
