@@ -112,7 +112,7 @@ pipeline {
                     echo '<--------------- Docker Build Started --------------->'
                     def version = "build-${env.BUILD_NUMBER}"
                     env.IMAGE_TAG = version
-                    def app = docker.build("${imageName}:${version}")
+                    app = docker.build("${imageName}:${version}")
                     echo '<--------------- Docker Build Ended --------------->'
                 }
             }
